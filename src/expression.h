@@ -7,11 +7,15 @@
 
 
 #include <string>
+#include "lexer.h"
 
 class BooleanExpression {
 public:
     virtual void interpret() const = 0;
+
     virtual std::string string() const = 0;
+
+    virtual TokenType getTokenType() const = 0;
 };
 
 #endif //INC_1LAB_EXPRESSION_H
