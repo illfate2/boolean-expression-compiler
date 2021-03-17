@@ -47,6 +47,8 @@ void RunTableTests() {
         {"((A&A)|(A&(!B)))",                                           "got repeated element: A"},
         {"((A&B)|(A&(!B)))",                                           {}},
         {"((A&B)|(A&(!B)))A",                                           "syntax error in your formula, unexpected identifier: token type: type, at position: 17, with value: A"},
+        {"((A&B)|(A&(!B))) A",                                           "syntax error in your formula, unexpected identifier: token type: type, at position: 18, with value: A"},
+        {"((A&B)|(A&(!B)))\nA",                                           "syntax error in your formula, unexpected identifier: token type: type, at position: 18, with value: A"},
         {"((A&B)|(A&(!B)))",                                           {}},
         {"(A&B)|(A&(!B)))",                                            "syntax error in your formula, unexpected identifier: token type: or operator, at position: 6, with value: |"},
         {"((A&B)|(A&(!(!B))))",                                        "expected a type here"},

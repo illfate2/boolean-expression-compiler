@@ -75,6 +75,7 @@ std::ostream &operator<<(std::ostream &os, const Token &token) {
     return os;
 }
 
+
 class Lexer {
 public:
     explicit Lexer(const std::string &str) {
@@ -106,7 +107,6 @@ public:
     }
 
 private:
-    // TODO REFACTOR
     Token getNext() {
         if (symbol_stream->eof()) {
             throw std::runtime_error("unexpected eof");
@@ -117,65 +117,34 @@ private:
         TokenType type;
         char next = symbol_stream->peek();
 
-        switch (token) {
-            case '(':
-                type = TokenType::OPEN_BRACKET;
-                break;
-            case ')':
-                type = TokenType::CLOSE_BRACKET;
-                break;
-            case '~':
-                type = TokenType::EQUALITY;
-                break;
-            case '-':
+        auto opt_type = getBaseTokenType(token, pos);
+        if (!opt_type) {
+            if (token == '-') {
                 assert(next == '>');
                 symbol_stream->ignore();
                 type = TokenType::IMPLICATION;
-                break;
-            case '!':
-                type = TokenType::NOT_OPERATOR;
-                break;
-            case '&':
-                type = TokenType::AND_OPERATOR;
-                break;
-            case '|':
-                type = TokenType::OR_OPERATOR;
-                break;
-            case ' ':
+            } else if (token == ' ' || token == '\n') {
                 return getNext();
-            case '\n':
-                return getNext();
-            case '\\':
-                assert(next == '/');
-                symbol_stream->ignore();
-                type = TokenType::OR_OPERATOR;
-                break;
-            case '/':
+            } else if (token == '/') {
                 assert(next == '\\');
                 symbol_stream->ignore();
                 type = TokenType::AND_OPERATOR;
-                break;
-            default:
-                if (isConstant(token)) {
-                    type = TokenType::CONSTANT;
-                    break;
-                }
-
-                if (isSymbol(token)) {
-                    type = TokenType::SYMBOL;
-                    break;
-                }
-                if (token != '\0' && token != -1) {
-                    std::stringstream ss;
-                    ss << "unsupported type: " << token << " at position " << std::to_string(pos);
-                    throw std::invalid_argument(ss.str());
-                }
+            } else if (token == '\\') {
+                assert(next == '/');
+                symbol_stream->ignore();
+                type = TokenType::OR_OPERATOR;
+            } else if (token != '\0' && token != -1) {
+                std::stringstream ss;
+                ss << "unsupported type: " << token << " at position " << std::to_string(pos);
+                throw std::invalid_argument(ss.str());
+            }
+        } else {
+            type = opt_type.value();
         }
         Token res_token{.type=type, .id=id_counter++, .position=pos, .value={token}};
         return res_token;
     }
 
-    // TODO REFACTOR
     std::pair<TokenType, std::string> lookupNext() {
         char token = symbol_stream->peek();
 
@@ -185,60 +154,55 @@ private:
         char next = symbol_stream->peek();
         symbol_stream->seekg(pos);
 
-        switch (token) {
-            case '(':
-                type = TokenType::OPEN_BRACKET;
-                break;
-            case ')':
-                type = TokenType::CLOSE_BRACKET;
-                break;
-            case '~':
-                type = TokenType::EQUALITY;
-                break;
-            case '!':
-                type = TokenType::NOT_OPERATOR;
-                break;
-            case '&':
-                type = TokenType::AND_OPERATOR;
-                break;
-            case '|':
-                type = TokenType::OR_OPERATOR;
-                break;
-            case '\\':
-                assert(next == '/');
-                type = TokenType::OR_OPERATOR;
-                break;
-            case '-':
+        auto opt_type = getBaseTokenType(token, pos);
+        if (!opt_type) {
+            if (token == '-') {
                 assert(next == '>');
                 type = TokenType::IMPLICATION;
-                break;
-            case '/':
+            } else if (token == ' ' || token == '\n') {
+                symbol_stream->ignore();
+                return lookupNext();
+            } else if (token == '/') {
                 assert(next == '\\');
                 type = TokenType::AND_OPERATOR;
-                break;
-            default:
-                if (isConstant(token)) {
-                    type = TokenType::CONSTANT;
-                    break;
-                }
-
-                if (token == ' ') {
-                    symbol_stream->ignore();
-                    return lookupNext();
-                }
-                if (isSymbol(token)) {
-                    type = TokenType::SYMBOL;
-                    break;
-                }
-                if (token != '\0' && token != -1 && token != '\n') {
-                    std::string err_msg = "unsupported type: ";
-                    err_msg += token;
-                    err_msg += " at position ";
-                    err_msg += std::to_string(symbol_stream->tellg());
-                    throw std::invalid_argument(err_msg);
-                }
+            } else if (token == '\\') {
+                assert(next == '/');
+                type = TokenType::OR_OPERATOR;
+            } else if (token != '\0' && token != -1) {
+                std::string err_msg = "unsupported type: ";
+                err_msg += token;
+                err_msg += " at position ";
+                err_msg += std::to_string(pos);
+                throw std::invalid_argument(err_msg);
+            }
+        } else {
+            type = opt_type.value();
         }
         return {type, {token}};
+    }
+
+    std::optional<TokenType> getBaseTokenType(char symbol, int64_t pos) {
+        switch (symbol) {
+            case '(':
+                return TokenType::OPEN_BRACKET;
+            case ')':
+                return TokenType::CLOSE_BRACKET;
+            case '~':
+                return TokenType::EQUALITY;
+            case '!':
+                return TokenType::NOT_OPERATOR;
+            case '&':
+                return TokenType::AND_OPERATOR;
+            case '|':
+                return TokenType::OR_OPERATOR;
+            default:
+                if (isConstant(symbol)) {
+                    return TokenType::CONSTANT;
+                } else if (isSymbol(symbol)) {
+                    return TokenType::SYMBOL;
+                }
+        }
+        return {};
     }
 
     size_t id_counter = 0;
