@@ -32,7 +32,7 @@ public:
 
     const std::shared_ptr<BooleanExpression> &GetRight() const { return right; }
 
-    std::shared_ptr<BooleanExpression> GetLeft() const { return left; }
+    const std::shared_ptr<BooleanExpression> &GetLeft() const { return left; }
 
     virtual TokenType getTokenType() const = 0;
 };
@@ -69,9 +69,26 @@ public:
         return TokenType::NOT_OPERATOR;
     }
 
+    void SetChild(const std::shared_ptr<BooleanExpression> &child) {
+        NonTerminal::SetRight(child);
+    }
+
     void SetLeft(const std::shared_ptr<BooleanExpression> &left) {
         throw std::invalid_argument("unsupported");
     }
+
+    void SetRight(const std::shared_ptr<BooleanExpression> &right) {
+        throw std::invalid_argument("unsupported");
+    }
+
+    const std::shared_ptr<BooleanExpression> &GetRight() const { throw std::invalid_argument("unsupported"); }
+
+
+    const std::shared_ptr<BooleanExpression> &GetChild() const { return NonTerminal::GetRight(); }
+
+    const std::shared_ptr<BooleanExpression> &GetLeft() const { throw std::invalid_argument("unsupported"); }
+
+
 };
 
 

@@ -75,8 +75,17 @@ public:
     void build() {
         factor();
         if (!lexer->IsEmpty()) {
+            try {
+                token = lexer->GetNext();
+            } catch (const std::exception &exception) {
+                if (exception.what() == std::string("unexpected eof")) {
+                    return;
+                } else {
+                    throw std::invalid_argument(exception.what());
+                }
+            }
             std::stringstream ss;
-            ss << "syntax error in your formula, unexpected identifier: " << lexer->LookupNext();
+            ss << "syntax error in your formula, unexpected identifier: " << token;
             throw std::invalid_argument(ss.str());
         }
     }
@@ -118,7 +127,7 @@ private:
         lexer->GetNext();
         factor();
         auto not_op = std::make_shared<NotOperation>(NotOperation());
-        not_op->SetRight(root);
+        not_op->SetChild(root);
         root = not_op;
     }
 
