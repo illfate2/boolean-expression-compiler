@@ -66,16 +66,18 @@ void debugNode(std::ostream &os, const std::shared_ptr<BooleanExpression> &node)
 class Parser {
 private:
     std::shared_ptr<BooleanExpression> root;
-    Lexer lexer;
-    TokenType symbol;
+    std::unique_ptr<Lexer> lexer;
+    Token token;
 
 public:
-    explicit Parser(const Lexer &lexer) : lexer(lexer) {}
+    explicit Parser(std::unique_ptr<Lexer> &&lexer) : lexer(std::move(lexer)) {}
 
     void build() {
         factor();
-        if (!lexer.IsEmpty()) {
-            throw std::invalid_argument("syntax error in your formula");
+        if (!lexer->IsEmpty()) {
+            std::stringstream ss;
+            ss << "syntax error in your formula, unexpected identifier: " << lexer->LookupNext();
+            throw std::invalid_argument(ss.str());
         }
     }
 
@@ -90,27 +92,30 @@ public:
 private:
     void binaryFormula() {
         factor();
-        assert((symbol == TokenType::OR_OPERATOR || symbol == TokenType::AND_OPERATOR));
-        while (symbol == TokenType::OR_OPERATOR) {
+        token = lexer->GetNext();
+        assert((token.type == TokenType::OR_OPERATOR || token.type == TokenType::AND_OPERATOR));
+        while (token.type == TokenType::OR_OPERATOR) {
             auto operation = std::make_shared<OrOperation>();
             operation->SetLeft(root);
             factor();
+            token = lexer->GetNext();
             operation->SetRight(root);
             root = operation;
-            match(symbol, TokenType::CLOSE_BRACKET);
+            match(token, TokenType::CLOSE_BRACKET);
         }
-        while (symbol == TokenType::AND_OPERATOR) {
+        while (token.type == TokenType::AND_OPERATOR) {
             auto operation = std::make_shared<AndOperation>();
             operation->SetLeft(root);
             factor();
+            token = lexer->GetNext();
             operation->SetRight(root);
             root = operation;
-            match(symbol, TokenType::CLOSE_BRACKET);
+            match(token, TokenType::CLOSE_BRACKET);
         }
     }
 
     void unaryFormula() {
-        lexer.GetNext();
+        lexer->GetNext();
         factor();
         auto not_op = std::make_shared<NotOperation>(NotOperation());
         not_op->SetRight(root);
@@ -118,34 +123,36 @@ private:
     }
 
     void handleFormula() {
-        TokenType next = lexer.LookupNext().token;
+        TokenType next = lexer->LookupNext().type;
         if (next == TokenType::NOT_OPERATOR) {
             unaryFormula();
+            token = lexer->GetNext();
         } else {
             binaryFormula();
         }
-        match(symbol, TokenType::CLOSE_BRACKET);
-        symbol = lexer.GetNext().token;
+        match(token, TokenType::CLOSE_BRACKET);
     }
 
     void factor() {
-        Token token = lexer.GetNext();
-        symbol = token.token;
-        if (symbol == TokenType::OPEN_BRACKET) {
+        token = lexer->GetNext();
+        if (token.type == TokenType::OPEN_BRACKET) {
             handleFormula();
-        } else if (symbol == TokenType::SYMBOL) {
+        } else if (token.type == TokenType::SYMBOL) {
             root = std::make_shared<Terminal>(Terminal(token.value));
-            symbol = lexer.GetNext().token;
-        } else if (symbol == TokenType::CONSTANT) {
+        } else if (token.type == TokenType::CONSTANT) {
             root = std::make_shared<Constant>(Constant(token.value));
-            symbol = lexer.GetNext().token;
         } else {
-            throw std::invalid_argument("unsupported token");
+            std::stringstream ss;
+            throw std::invalid_argument("unexpected type");
         }
     }
 
-    void match(TokenType got, TokenType want) {
-        assert(got == want);
+    void match(const Token &got, TokenType want) {
+        if (got.type != want) {
+            std::stringstream ss;
+            ss << "unexpected type: " << "got: " << got << ", bur want: " << want << "\n";
+            throw std::invalid_argument(ss.str());
+        }
     }
 
 

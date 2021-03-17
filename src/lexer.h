@@ -9,6 +9,7 @@
 #include <utility>
 #include <unordered_map>
 #include <sstream>
+#include <cassert>
 
 const std::unordered_set<char> symbols = {
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -31,59 +32,84 @@ enum class TokenType {
     CONSTANT,
 };
 
+std::ostream &operator<<(std::ostream &os, const TokenType &tokenType) {
+    switch (tokenType) {
+        case TokenType::OPEN_BRACKET:
+            os << "open bracket";
+            return os;
+        case TokenType::CLOSE_BRACKET:
+            os << "close bracket";
+            return os;
+        case TokenType::AND_OPERATOR:
+            os << "and operator";
+            return os;
+        case TokenType::OR_OPERATOR:
+            os << "or operator";
+            return os;
+        case TokenType::SYMBOL:
+            os << "type";
+            return os;
+        case TokenType::CONSTANT:
+            os << "constant";
+            return os;
+        case TokenType::NOT_OPERATOR:
+            os << "not operator";
+            return os;
+    }
+}
+
 struct Token {
 public:
-    TokenType token;
+    TokenType type;
     size_t id;
     size_t position;
     std::string value;
-
-    Token() {
-
-    }
 };
+
+std::ostream &operator<<(std::ostream &os, const Token &token) {
+    os << "token type: " << token.type << ", at position: " << token.position << ", with value: " << token.value;
+    return os;
+}
 
 class Lexer {
 public:
-    Lexer(std::string str) : str(std::move(str)) {
-//        symbol_stream=std::stringstream(str);
+    explicit Lexer(const std::string &str) {
+        symbol_stream = std::stringstream(str);
     }
 
     Token GetNext() {
-        TokenType type = getNext();
-        Token token;
-        token.token = type;
-        token.id = id_counter++;
-        token.position = counter - 1;
-        token.value = {GetPrev()};
+        auto[type, value] = getNext();
+        Token token{.type=type, .id=id_counter++, .position=static_cast<size_t>(symbol_stream.tellg()), .value=value};
         token_table[token.id] = token;
         return token;
     }
 
+    Token LookupNext() {
+        auto[type, value] = lookupNext();
+        size_t pos = symbol_stream.tellg();
+        Token token{.type=type, .position=pos, .value=value};
+        return token;
+    }
+
     bool IsEmpty() const {
-        return str.size() == (counter - 1);
+        return symbol_stream.eof();
     }
 
     const std::unordered_map<size_t, Token> &GetTable() const {
         return token_table;
     }
 
-    Token LookupNext() {
-        Token next = GetNext();
-        --counter;
-        return next;
-    }
 
 private:
 
-    char GetPrev() {
-        return str[counter - 1];
-    }
+    std::pair<TokenType, std::string> getNext() {
+        if (symbol_stream.eof()){
+            throw std::runtime_error("eof");
+        }
+        char token = symbol_stream.get();
 
-    TokenType getNext() {
-        char token = str[counter++];
         TokenType type;
-        char next = str[counter];
+        char next = symbol_stream.peek();
 
         switch (token) {
             case '(':
@@ -102,16 +128,15 @@ private:
                 type = TokenType::OR_OPERATOR;
                 break;
             case ' ':
-                type = getNext();
-                break;
+                return getNext();
             case '\\':
                 assert(next == '/');
-                counter++;
+                symbol_stream.ignore();
                 type = TokenType::OR_OPERATOR;
                 break;
             case '/':
                 assert(next == '\\');
-                counter++;
+                symbol_stream.ignore();
                 type = TokenType::AND_OPERATOR;
                 break;
             default:
@@ -124,24 +149,74 @@ private:
                     type = TokenType::SYMBOL;
                     break;
                 }
-                if (token != '\0') {
-                    std::string err_msg = "unsupported symbol: ";
+                if (token != '\0' && token != -1) {
+                    std::stringstream ss;
+                    ss << "unsupported type: " << token << " at position " << std::to_string(symbol_stream.tellg());
+                    throw std::invalid_argument(ss.str());
+                }
+        }
+        return {type, {token}};
+    }
+
+    std::pair<TokenType, std::string> lookupNext() {
+        char token = symbol_stream.peek();
+
+        size_t pos = symbol_stream.tellg();
+        symbol_stream.seekg(pos + 1);
+        TokenType type;
+        char next = symbol_stream.peek();
+        symbol_stream.seekg(pos);
+
+        switch (token) {
+            case '(':
+                type = TokenType::OPEN_BRACKET;
+                break;
+            case ')':
+                type = TokenType::CLOSE_BRACKET;
+                break;
+            case '!':
+                type = TokenType::NOT_OPERATOR;
+                break;
+            case '&':
+                type = TokenType::AND_OPERATOR;
+                break;
+            case '|':
+                type = TokenType::OR_OPERATOR;
+                break;
+            case '\\':
+                assert(next == '/');
+                type = TokenType::OR_OPERATOR;
+                break;
+            case '/':
+                assert(next == '\\');
+                type = TokenType::AND_OPERATOR;
+                break;
+            default:
+                if (isConstant(token)) {
+                    type = TokenType::CONSTANT;
+                    break;
+                }
+
+                if (token == ' ') {
+                    symbol_stream.ignore();
+                    return lookupNext();
+                }
+                if (isSymbol(token)) {
+                    type = TokenType::SYMBOL;
+                    break;
+                }
+                if (token != '\0' && token != -1) {
+                    std::string err_msg = "unsupported type: ";
                     err_msg += token;
                     err_msg += " at position ";
-                    err_msg += std::to_string(counter);
+                    err_msg += std::to_string(symbol_stream.tellg());
                     throw std::invalid_argument(err_msg);
                 }
         }
-        return type;
+        return {type, {token}};
     }
 
-    char LookupNextSymbol() {
-        return str[counter + 1];
-    }
-
-    std::string str;
     size_t id_counter = 0;
-    size_t counter = 0;
     std::stringstream symbol_stream;
     std::unordered_map<size_t, Token> token_table;
 };

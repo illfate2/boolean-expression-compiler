@@ -19,8 +19,8 @@ public:
 
     std::optional<std::string> IsPDNF() {
         try {
-            Lexer lexer(source);
-            auto parser = Parser(lexer);
+            auto lexer = std::make_unique<Lexer>(Lexer(source));
+            auto parser = Parser(std::move(lexer));
             parser.build();
             SemanticAnalyzer analyzer(parser.GetRoot());
             return analyzer.Is();

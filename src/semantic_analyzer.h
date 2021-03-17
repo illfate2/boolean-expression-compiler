@@ -107,7 +107,7 @@ public:
         } else if (left_token_type == TokenType::NOT_OPERATOR) {
             auto not_operation = std::dynamic_pointer_cast<NotOperation>(left_node);
             if (not_operation->GetRight()->getTokenType() != TokenType::SYMBOL) {
-                throw std::invalid_argument("expected a symbol here");
+                throw std::invalid_argument("expected a type here");
             }
             parsed_dnf.emplace_back(not_operation->GetRight()->string(), false);
         }
@@ -121,7 +121,7 @@ public:
         } else if (right_token_type == TokenType::NOT_OPERATOR) {
             auto not_operation = std::dynamic_pointer_cast<NotOperation>(right_node);
             if (not_operation->GetRight()->getTokenType() != TokenType::SYMBOL) {
-                throw std::invalid_argument("expected a symbol here");
+                throw std::invalid_argument("expected a type here");
             }
             parsed_dnf.emplace_back(not_operation->GetRight()->string(), false);
         }
