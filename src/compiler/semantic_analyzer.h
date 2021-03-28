@@ -14,6 +14,7 @@
 #include <iterator>
 #include <cmath>
 #include <functional>
+#include <set>
 
 template<std::ranges::range R>
 auto to_vector(R &&r) {
@@ -83,12 +84,10 @@ private:
         return std::adjacent_find(v.begin(), v.end()) != v.end();
     }
 
-    template<typename It, typename BackIT>
-    void findDuplicatesWithOutput(It begin, It end, BackIT back_inserter) {
+    template<typename It, typename BackIt>
+    void findDuplicates(It begin, It end, BackIt back_inserter) {
         std::sort(begin, end);
-
         std::set<typename std::iterator_traits<It>::value_type> unique(begin, end);
-
         std::set_difference(begin, end, unique.begin(), unique.end(), back_inserter);
     }
 
@@ -97,7 +96,7 @@ private:
             return p.first;
         }));
         std::vector<std::string> diff;
-        findDuplicatesWithOutput(transformed.begin(), transformed.end(), std::back_inserter(diff));
+        findDuplicates(transformed.begin(), transformed.end(), std::back_inserter(diff));
         if (diff.begin() == diff.end()) {
             return;
         }

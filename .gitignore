@@ -42,3 +42,6 @@ Testing
 *.cbp
 cmake_install.cmake
 /boolean-expression-compiler
+/_deps/catch2-subbuild/
+/CTestTestfile.cmake
+/tests

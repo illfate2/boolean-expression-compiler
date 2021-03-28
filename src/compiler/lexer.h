@@ -8,9 +8,11 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
+#include <unordered_set>
 #include <sstream>
 #include <cassert>
 #include <functional>
+#include <memory>
 
 const std::unordered_set<char> symbols = {
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
