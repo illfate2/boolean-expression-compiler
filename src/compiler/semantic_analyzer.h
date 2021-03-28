@@ -145,7 +145,9 @@ private:
         } else if (node->getTokenType() == TokenType::AND_OPERATOR) {
             dnfs.push_back(node);
         } else {
-            throw std::invalid_argument("unexpected");
+            std::stringstream ss;
+            ss << "unexpected operator in PDNF: " << node->getTokenType();
+            throw std::invalid_argument(ss.str());
         }
     }
 

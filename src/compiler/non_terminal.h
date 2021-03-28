@@ -48,6 +48,28 @@ public:
     }
 };
 
+class ImplicationOperation : public NonTerminal {
+public:
+    std::string string() const override { return "IMPLICATION"; }
+
+    void interpret() const override {}
+
+    TokenType getTokenType() const override {
+        return TokenType::IMPLICATION;
+    }
+};
+
+class EqualityOperation : public NonTerminal {
+public:
+    std::string string() const override { return "EQUALITY"; }
+
+    void interpret() const override {}
+
+    TokenType getTokenType() const override {
+        return TokenType::EQUALITY;
+    }
+};
+
 class AndOperation : public NonTerminal {
 public:
     void interpret() const override {}

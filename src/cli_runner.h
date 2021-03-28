@@ -45,9 +45,9 @@ private:
         Compiler compiler(std::move(is));
         auto pdnf_err = compiler.IsPDNF();
         if (pdnf_err) {
-            std::cout << "false: " << pdnf_err.value() << "\n";
+            std::cout << "This formula isn't in PDNF: " << pdnf_err.value() << "\n";
         } else {
-            std::cout << "true\n";
+            std::cout << "This formula is in PDNF.\n";
         }
     }
 

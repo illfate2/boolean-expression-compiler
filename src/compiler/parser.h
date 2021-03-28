@@ -102,18 +102,19 @@ private:
     void binaryFormula() {
         factor();
         token = lexer->GetNext();
-        assert((token.type == TokenType::OR_OPERATOR || token.type == TokenType::AND_OPERATOR));
-        while (token.type == TokenType::OR_OPERATOR) {
-            auto operation = std::make_shared<OrOperation>();
-            operation->SetLeft(root);
-            factor();
-            token = lexer->GetNext();
-            operation->SetRight(root);
-            root = operation;
-            match(token, TokenType::CLOSE_BRACKET);
-        }
-        while (token.type == TokenType::AND_OPERATOR) {
-            auto operation = std::make_shared<AndOperation>();
+        assert((token.type == TokenType::OR_OPERATOR || token.type == TokenType::AND_OPERATOR) ||
+               token.type == TokenType::IMPLICATION || token.type == TokenType::EQUALITY);
+        parseBinaryFormula<OrOperation>();
+        parseBinaryFormula<AndOperation>();
+        parseBinaryFormula<ImplicationOperation>();
+        parseBinaryFormula<EqualityOperation>();
+    }
+
+    template<typename Operation>
+    void parseBinaryFormula() {
+        Operation op;
+        while (token.type == op.getTokenType()) {
+            auto operation = std::make_shared<Operation>();
             operation->SetLeft(root);
             factor();
             token = lexer->GetNext();

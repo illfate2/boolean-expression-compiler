@@ -60,6 +60,12 @@ std::ostream &operator<<(std::ostream &os, const TokenType &tokenType) {
         case TokenType::NOT_OPERATOR:
             os << "not operator";
             return os;
+        case TokenType::IMPLICATION:
+            os << "implication";
+            return os;
+        case TokenType::EQUALITY:
+            os << "equality";
+            return os;
     }
     return os;
 }
