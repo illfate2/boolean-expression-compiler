@@ -13,89 +13,23 @@
 #include <cassert>
 #include <functional>
 #include <memory>
-
-const std::unordered_set<char> symbols = {
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-};
-
-bool isSymbol(char ch) { return symbols.find(ch) != symbols.end(); }
-
-bool isConstant(char ch) {
-    return ch == '1' | ch == '0';
-}
-
-enum class TokenType {
-    OPEN_BRACKET,
-    CLOSE_BRACKET,
-    EQUALITY,
-    IMPLICATION,
-    NOT_OPERATOR,
-    AND_OPERATOR,
-    OR_OPERATOR,
-    SYMBOL,
-    CONSTANT,
-};
-
-std::ostream &operator<<(std::ostream &os, const TokenType &tokenType) {
-    switch (tokenType) {
-        case TokenType::OPEN_BRACKET:
-            os << "open bracket";
-            return os;
-        case TokenType::CLOSE_BRACKET:
-            os << "close bracket";
-            return os;
-        case TokenType::AND_OPERATOR:
-            os << "and operator";
-            return os;
-        case TokenType::OR_OPERATOR:
-            os << "or operator";
-            return os;
-        case TokenType::SYMBOL:
-            os << "type";
-            return os;
-        case TokenType::CONSTANT:
-            os << "constant";
-            return os;
-        case TokenType::NOT_OPERATOR:
-            os << "not operator";
-            return os;
-        case TokenType::IMPLICATION:
-            os << "implication";
-            return os;
-        case TokenType::EQUALITY:
-            os << "equality";
-            return os;
-    }
-    return os;
-}
-
-struct Token {
-public:
-    TokenType type;
-    size_t id;
-    int64_t position;
-    std::string value;
-};
-
-std::ostream &operator<<(std::ostream &os, const Token &token) {
-    os << "token type: " << token.type << ", at position: " << token.position << ", with value: " << token.value;
-    return os;
-}
-
+#include "symbol_table.h"
+#include "token.h"
 
 class Lexer {
 public:
-    explicit Lexer(const std::string &str) {
+    explicit Lexer(const std::string &str, const std::shared_ptr<SymbolTable> &symbol_table) : symbol_table(
+            symbol_table) {
         symbol_stream = std::make_unique<std::istringstream>(std::istringstream(str));
     }
 
-    explicit Lexer(std::unique_ptr<std::istream> &&ss) : symbol_stream(std::move(ss)) {
+    explicit Lexer(std::unique_ptr<std::istream> &&ss, const std::shared_ptr<SymbolTable> &symbol_table)
+            : symbol_stream(std::move(ss)), symbol_table(symbol_table) {
     }
 
     Token GetNext() {
         auto token = getNext();
-        token_table[token.id] = token;
+        symbol_table->SetToken(token.id, token);
         return token;
     }
 
@@ -108,10 +42,6 @@ public:
 
     bool IsEmpty() const {
         return symbol_stream->eof();
-    }
-
-    const std::unordered_map<size_t, Token> &GetTable() const {
-        return token_table;
     }
 
 private:
@@ -131,6 +61,15 @@ private:
                 assert(next == '>');
                 symbol_stream->ignore();
                 type = TokenType::IMPLICATION;
+            } else if (token == 'l') {
+                assert(next == 'e');
+                symbol_stream->ignore();
+                token = symbol_stream->get();
+                assert(token == 't');
+
+                next = symbol_stream->peek();
+                assert(next == ' ');
+                type = TokenType::IDENTIFIER_OPERATOR;
             } else if (token == ' ' || token == '\n') {
                 return getNext();
             } else if (token == '/') {
@@ -199,10 +138,14 @@ private:
                 return TokenType::EQUALITY;
             case '!':
                 return TokenType::NOT_OPERATOR;
-            case '&':
-                return TokenType::AND_OPERATOR;
-            case '|':
-                return TokenType::OR_OPERATOR;
+            case '=':
+                return TokenType::ASSIGNMENT_OPERATOR;
+            case ';':
+                return TokenType::CLOSE_EXPRESSION_OPERATOR;
+//            case '&':
+//                return TokenType::AND_OPERATOR;
+//            case '|':
+//                return TokenType::OR_OPERATOR;
             default:
                 if (isConstant(symbol)) {
                     return TokenType::CONSTANT;
@@ -210,12 +153,15 @@ private:
                     return TokenType::SYMBOL;
                 }
         }
+
         return {};
     }
 
-    size_t id_counter = 0;
+    size_t
+
+            id_counter = 0;
     std::unique_ptr<std::istream> symbol_stream;
-    std::unordered_map<size_t, Token> token_table;
+    std::shared_ptr<SymbolTable> symbol_table;
 };
 
 #endif //INC_1LAB_LEXER_H

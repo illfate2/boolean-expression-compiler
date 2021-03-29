@@ -14,7 +14,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(
         boolean-expression-compiler
         vendor/argparse.hpp
-        src/main.cpp src/compiler/terminal.h src/compiler/non_terminal.h src/compiler/parser.h src/compiler/expression.h src/compiler/lexer.h src/compiler/semantic_analyzer.h src/compiler/compiler.h src/cli_runner.h)
+        src/main.cpp src/compiler/terminal.h src/compiler/non_terminal.h src/compiler/parser.h src/compiler/expression.h src/compiler/lexer.h src/compiler/semantic_analyzer.h src/compiler/compiler.h src/cli_runner.h src/compiler/symbol_table.h src/compiler/token.h vendor/text_table.h)
 add_executable(tests src/tests/tests.cpp)
 
 enable_testing()

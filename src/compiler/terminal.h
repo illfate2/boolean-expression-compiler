@@ -12,7 +12,9 @@ class Terminal : public BooleanExpression {
 public:
     Terminal(std::string str) : symbol(std::move(str)) {}
 
-    void interpret() const override {}
+    bool interpret() const override {
+        return value;
+    }
 
     std::string string() const { return symbol; }
 
@@ -20,9 +22,19 @@ public:
         return TokenType::SYMBOL;
     }
 
+    void SetValue(bool v) {
+        value = v;
+    }
+
+
+
 private:
     std::string symbol;
+    bool value;
 };
+bool operator<(const Terminal &lhs, const Terminal &rhs) {
+    return lhs.string() < rhs.string();
+}
 
 class Constant : public BooleanExpression {
 public:
@@ -34,8 +46,13 @@ public:
         }
     }
 
-    void interpret() const override {
-        // TODO
+    Constant &operator=(const Constant &con) {
+        this->value = con.value;
+        return *this;
+    }
+
+    bool interpret() const override {
+        return value;
     }
 
     std::string string() const override {
@@ -44,6 +61,10 @@ public:
 
     TokenType getTokenType() const override {
         return TokenType::CONSTANT;
+    }
+
+    bool getValue() const {
+        return value;
     }
 
 private:

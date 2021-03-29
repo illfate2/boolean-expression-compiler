@@ -15,6 +15,7 @@
 #include <cmath>
 #include <functional>
 #include <set>
+#include <deque>
 
 template<std::ranges::range R>
 auto to_vector(R &&r) {
@@ -25,7 +26,10 @@ auto to_vector(R &&r) {
 
 class SemanticAnalyzer {
 public:
-    explicit SemanticAnalyzer(std::shared_ptr<BooleanExpression> root) : root(std::move(root)) {}
+    SemanticAnalyzer(
+            std::shared_ptr<BooleanExpression> root,
+            const std::shared_ptr<SymbolTable> &symbol_table
+    ) : root(std::move(root)), symbol_table(symbol_table) {}
 
     std::optional<std::string> IsPDNF() {
         try {
@@ -47,6 +51,107 @@ public:
             return std::optional(ex.what());
         }
         return {};
+    }
+
+    struct FormulaResult {
+        std::vector<std::string> symbols;
+        std::deque<bool> results;
+        std::vector<std::deque<bool>> matrix_values;
+    };
+
+    struct SharedComparator {
+        template<typename T>
+        bool operator()(const std::shared_ptr<T> &lhs,
+                        const std::shared_ptr<T> &rhs) const {
+            return (*lhs) < (*rhs);
+        }
+    };
+
+    FormulaResult CalculateFormula() const {
+        auto token_to_const = symbol_table->getTokenToConstant();
+        std::vector<std::string> symbols;
+        std::deque<bool> initial_values;
+        for (const auto&[token, constant]:token_to_const) {
+            symbols.push_back(token.value);
+            initial_values.push_back(constant.getValue());
+        }
+
+        std::vector<std::shared_ptr<Terminal>> symbols_without_values;
+        getSymbolsWithoutValuesAndSetValues(symbols_without_values, root, token_to_const);
+        std::set<std::shared_ptr<Terminal>, SharedComparator> symbols_without_values_unique(
+                symbols_without_values.begin(),
+                symbols_without_values.end());
+        for (const auto &term:symbols_without_values_unique) {
+            symbols.push_back(term->string());
+        }
+
+        auto[matrix, results]=getRowsAndResult(symbols_without_values, symbols_without_values_unique, initial_values);
+        return {
+                .symbols=symbols,
+                .results=results,
+                .matrix_values=matrix
+        };
+    }
+
+    std::pair<std::vector<std::deque<bool>>, std::deque<bool>>
+    getRowsAndResult(const std::vector<std::shared_ptr<Terminal>> &symbols_without_values,
+                     const std::set<std::shared_ptr<Terminal>, SharedComparator> &symbols_without_values_unique,
+                     const std::deque<bool> &initial_values
+    ) const {
+        size_t amount_of_data_vectors = std::pow(2, symbols_without_values_unique.size());
+        std::vector<std::deque<bool>> rows_of_symbol_values;
+        std::deque<bool> results;
+        for (size_t i = 0; i < amount_of_data_vectors; ++i) {
+            std::deque<bool> row(initial_values.begin(), initial_values.end());
+            auto it = symbols_without_values_unique.begin();
+            for (size_t j = 0; j < symbols_without_values_unique.size(); ++j) {
+                bool value = ((i & (int) std::pow(2, j)) > 0);
+                row.push_back(value);
+                for (auto &s:symbols_without_values) {
+                    if (s->string() == it->get()->string()) {
+                        s->SetValue(value);
+                    }
+                }
+                ++it;
+            }
+            bool result = root->interpret();
+            results.push_back(result);
+            rows_of_symbol_values.push_back(std::move(row));
+        }
+        return {rows_of_symbol_values, results};
+    }
+
+    void
+    getSymbolsWithoutValuesAndSetValues(
+//            std::set<std::shared_ptr<Terminal>, SharedComparator> &terminals,
+            std::vector<std::shared_ptr<Terminal>> &terminals,
+            const std::shared_ptr<BooleanExpression> &expression,
+            const std::unordered_map<Token, Constant> &term_to_constant) const {
+        TokenType root_token_type = expression->getTokenType();
+        if (isBinaryOperation(root_token_type)) {
+            auto bin_op = std::dynamic_pointer_cast<NonTerminal>(expression);
+            auto right = bin_op->GetRight();
+            getSymbolsWithoutValuesAndSetValues(terminals, right, term_to_constant);
+            auto left = bin_op->GetLeft();
+            getSymbolsWithoutValuesAndSetValues(terminals, left, term_to_constant);
+        } else if (root_token_type == TokenType::NOT_OPERATOR) {
+            auto not_op = std::dynamic_pointer_cast<NotOperation>(expression);
+            auto child = not_op->GetChild();
+            getSymbolsWithoutValuesAndSetValues(terminals, child, term_to_constant);
+        } else if (root_token_type == TokenType::SYMBOL) {
+            auto symbol = std::dynamic_pointer_cast<Terminal>(expression);
+            bool found = false;
+            for (auto &[token, constant]:term_to_constant) {
+                if (token.value == symbol->string()) {
+                    found = true;
+                    symbol->SetValue(constant.getValue());
+                }
+            }
+            if (!found) {
+//                terminals.insert(symbol);
+                terminals.push_back(symbol);
+            }
+        }
     }
 
 private:
@@ -153,6 +258,7 @@ private:
 
     std::shared_ptr<BooleanExpression> root;
     std::vector<std::shared_ptr<BooleanExpression>> dnfs;
+    std::shared_ptr<SymbolTable> symbol_table;
 
 };
 

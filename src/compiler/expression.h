@@ -11,7 +11,7 @@
 
 class BooleanExpression {
 public:
-    virtual void interpret() const = 0;
+    virtual bool interpret() const = 0;
 
     virtual std::string string() const = 0;
 

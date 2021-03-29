@@ -17,10 +17,7 @@ public:
 
     virtual std::string string() const = 0;
 
-    void interpret() const override {
-        this->left->interpret();
-        this->right->interpret();
-    }
+    virtual bool interpret() const = 0;
 
     void SetRight(const std::shared_ptr<BooleanExpression> &right) {
         this->right = right;
@@ -41,7 +38,9 @@ class OrOperation : public NonTerminal {
 public:
     std::string string() const override { return "OR"; }
 
-    void interpret() const override {}
+    bool interpret() const override {
+        return GetLeft()->interpret() || GetRight()->interpret();
+    }
 
     TokenType getTokenType() const override {
         return TokenType::OR_OPERATOR;
@@ -52,7 +51,9 @@ class ImplicationOperation : public NonTerminal {
 public:
     std::string string() const override { return "IMPLICATION"; }
 
-    void interpret() const override {}
+    bool interpret() const override {
+        return GetLeft()->interpret() <= GetRight()->interpret();
+    }
 
     TokenType getTokenType() const override {
         return TokenType::IMPLICATION;
@@ -63,7 +64,9 @@ class EqualityOperation : public NonTerminal {
 public:
     std::string string() const override { return "EQUALITY"; }
 
-    void interpret() const override {}
+    bool interpret() const override {
+        return GetLeft()->interpret() == GetRight()->interpret();
+    }
 
     TokenType getTokenType() const override {
         return TokenType::EQUALITY;
@@ -72,7 +75,9 @@ public:
 
 class AndOperation : public NonTerminal {
 public:
-    void interpret() const override {}
+    bool interpret() const override {
+        return GetRight()->interpret() && GetLeft()->interpret();
+    }
 
     std::string string() const override { return "AND"; }
 
@@ -83,7 +88,9 @@ public:
 
 class NotOperation : public NonTerminal {
 public:
-    void interpret() const override {}
+    bool interpret() const override {
+        return !GetChild()->interpret();
+    }
 
     std::string string() const override { return "NOT"; }
 

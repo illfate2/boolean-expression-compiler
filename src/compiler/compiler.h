@@ -24,11 +24,25 @@ public:
 
     std::optional<std::string> IsPDNF() {
         try {
-            auto lexer = getLexer();
-            auto parser = Parser(std::move(lexer));
+            auto symbol_table = std::make_shared<SymbolTable>();
+            auto lexer = getLexer(symbol_table);
+            auto parser = Parser(std::move(lexer), symbol_table);
             parser.build();
-            SemanticAnalyzer analyzer(parser.GetRoot());
+            SemanticAnalyzer analyzer(parser.GetRoot(), symbol_table);
             return analyzer.IsPDNF();
+        } catch (const std::exception &ex) {
+            return {ex.what()};
+        }
+    }
+
+    std::variant<SemanticAnalyzer::FormulaResult, std::string> CalculateFormula() {
+        try {
+            auto symbol_table = std::make_shared<SymbolTable>();
+            auto lexer = getLexer(symbol_table);
+            auto parser = Parser(std::move(lexer), symbol_table);
+            parser.build();
+            SemanticAnalyzer analyzer(parser.GetRoot(), symbol_table);
+            return analyzer.CalculateFormula();
         } catch (const std::exception &ex) {
             return {ex.what()};
         }
@@ -36,11 +50,11 @@ public:
 
 private:
 
-    std::unique_ptr<Lexer> getLexer() {
+    std::unique_ptr<Lexer> getLexer(const std::shared_ptr<SymbolTable> &symbolTable) {
         if (istream) {
-            return std::make_unique<Lexer>(Lexer(std::move(istream)));
+            return std::make_unique<Lexer>(Lexer(std::move(istream), symbolTable));
         }
-        return std::make_unique<Lexer>(Lexer(source));
+        return std::make_unique<Lexer>(Lexer(source, symbolTable));
     }
 
     std::string source;
