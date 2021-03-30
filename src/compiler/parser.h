@@ -154,24 +154,28 @@ private:
         } else if (token.type == TokenType::CONSTANT) {
             root = std::make_shared<Constant>(Constant(token.value));
         } else if (token.type == TokenType::IDENTIFIER_OPERATOR) {
-            token = lexer->GetNext();
-            match(token, TokenType::SYMBOL);
-
-            auto symbol = std::move(token);
-            token = lexer->GetNext();
-            match(token, TokenType::ASSIGNMENT_OPERATOR);
-
-            token = lexer->GetNext();
-            match(token, TokenType::CONSTANT);
-            auto const_token = std::move(token);
-            token = lexer->GetNext();
-            match(token, TokenType::CLOSE_EXPRESSION_OPERATOR);
-            symbol_table->SetTokenToConst(symbol, Constant(const_token.value));
-            factor();
+            handleVariableInit();
         } else {
             std::stringstream ss;
             throw std::invalid_argument("unexpected type");
         }
+    }
+
+    void handleVariableInit() {
+        token = lexer->GetNext();
+        match(token, TokenType::SYMBOL);
+
+        auto symbol = std::move(token);
+        token = lexer->GetNext();
+        match(token, TokenType::ASSIGNMENT_OPERATOR);
+
+        token = lexer->GetNext();
+        match(token, TokenType::CONSTANT);
+        auto const_token = std::move(token);
+        token = lexer->GetNext();
+        match(token, TokenType::CLOSE_EXPRESSION_OPERATOR);
+        symbol_table->SetTokenToConst(symbol, Constant(const_token.value));
+        factor();
     }
 
     void match(const Token &got, TokenType want) {
