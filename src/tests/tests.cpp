@@ -116,26 +116,33 @@ TEST_CASE("test compiler") {
             {R"(((A/\A)\/(A/\(!B))))",                                                 "got repeated element: A"},
             {R"(((A/\B)\/(A/\(!B))))",                                                 {}},
             {R"(((A/\B)\/(A/\(!B)))A)",                                                "syntax error in your formula, unexpected identifier: token type: type, at position: 20, with value: A"},
-            {"((A/\\B)\\/(A/\\(!B)))",                                                 {}},
-            {"((A/\\B)\\/(A/\\(!(!B))))",                                              "expected a type here"},
-            {"((A/\\(!B))\\/(A/\\(!B)))",                                              "got equal elementary conjunction"},
+            {R"(((A/\B)\/(A/\(!B))))",                                                 {}},
+            {R"(((A/\B)\/(A/\(!(!B)))))",                                              "expected a type here"},
+            {R"(((A/\(!B))\/(A/\(!B))))",                                              "got equal elementary conjunction"},
             {R"((((!A)/\B)\/(A/\(!B))))",                                              {}},
             {R"((((!A)/\B)\/(A/\(!B))))",                                              {}},
             {R"((((!A)/\B)\/(A/\(!B))))",                                              {}},
             {R"((((((!A)/\B)/\(!C))\/(A/\((!B)/\(!C))))\/(((!A)/\(!B))/\(!C))))",      {}},
-            {R"((((((!A)\/B)/\(!C))\/(A/\((!B)/\(!C))))\/(((!A)/\(!B))/\(!C))))",      {"got not equal vars in conjunctions"}},
+            {R"((((((!A)\/B)/\(!C))\/(A/\((!B)/\(!C))))\/(((!A)/\(!B))/\(!C))))",      {"unexpected token"}},
             {R"((((((!A)/\B)/\((!C)/\A))\/(A/\((!B)/\(!C))))\/(((!A)/\(!B))/\(!C))))", {"got repeated element: A"}},
             {R"((((((!A)/\D)/\(!C))\/(A/\((!B)/\(!C))))\/(((!A)/\(!B))/\(!C))))",      {"got not equal vars in conjunctions"}},
             {"",                                                                       "unexpected type"},
             {" ",                                                                      "unexpected eof"},
             {"1",                                                                      "expected or operator"},
             {"0",                                                                      "expected or operator"},
+            {"(A/\\B)",                                                                {}},
+            {"(A/\\(!B))",                                                             {}},
+            {"(A/\\(!A))",                                                             "got repeated element: A"},
     };
     std::ranges::for_each(test_cases, [&](auto pair) {
         auto str = std::string(pair.first);
         Compiler compiler(str);
         auto err_msg = compiler.IsPDNF();
         CHECK(pair.second == err_msg);
+        if (pair.second != err_msg) {
+            std::cerr << err_msg << "\n";
+            std::cerr << pair.second << "\n";
+        }
     });
 }
 

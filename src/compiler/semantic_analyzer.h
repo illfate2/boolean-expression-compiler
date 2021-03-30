@@ -230,10 +230,16 @@ private:
                 throw std::invalid_argument("expected a type here");
             }
             parsed_dnf.emplace_back(not_operation->GetChild()->string(), false);
+        } else {
+            throw std::invalid_argument("unexpected token");
         }
     }
 
     void splitDNFs(const std::shared_ptr<BooleanExpression> &node) {
+        if (node->getTokenType() == TokenType::AND_OPERATOR) {
+            dnfs.push_back(node);
+            return;
+        }
         if (node->getTokenType() != TokenType::OR_OPERATOR) {
             throw std::invalid_argument("expected or operator");
         }
