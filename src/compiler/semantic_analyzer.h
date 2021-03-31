@@ -43,10 +43,10 @@ public:
             if (hasDuplicates(sorted_parsed_dnfs)) {
                 throw std::invalid_argument("got equal elementary conjunction");
             }
-            checkForEqualVars(sorted_parsed_dnfs);
             if (parsed_dnfs.size() > std::pow(2, parsed_dnfs[0].size())) {
                 throw std::invalid_argument("got to many conjunction");
             }
+            checkForEqualVars(sorted_parsed_dnfs);
         } catch (const std::exception &ex) {
             return std::optional(ex.what());
         }
@@ -123,7 +123,6 @@ public:
 
     void
     getSymbolsWithoutValuesAndSetValues(
-//            std::set<std::shared_ptr<Terminal>, SharedComparator> &terminals,
             std::vector<std::shared_ptr<Terminal>> &terminals,
             const std::shared_ptr<BooleanExpression> &expression,
             const std::unordered_map<Token, Constant> &term_to_constant) const {
@@ -148,7 +147,6 @@ public:
                 }
             }
             if (!found) {
-//                terminals.insert(symbol);
                 terminals.push_back(symbol);
             }
         }
@@ -162,7 +160,7 @@ private:
         parsed_dnfs.resize(dnfs.size());
         size_t counter = 0;
         for (const auto &dnf:dnfs) {
-            isDNF(dnf, parsed_dnfs[counter]);
+            checkIsDNF(dnf, parsed_dnfs[counter]);
             assertNoRepeatedVars(parsed_dnfs[counter]);
             ++counter;
         }
@@ -211,7 +209,7 @@ private:
         throw std::invalid_argument(ss.str());
     }
 
-    void isDNF(const std::shared_ptr<BooleanExpression> &node, std::vector<std::pair<std::string, bool>> &parsed_dnf) {
+    void checkIsDNF(const std::shared_ptr<BooleanExpression> &node, std::vector<std::pair<std::string, bool>> &parsed_dnf) {
         auto and_operation = std::dynamic_pointer_cast<AndOperation>(node);
         checkNodeIsDNF(and_operation->GetLeft(), parsed_dnf);
         checkNodeIsDNF(and_operation->GetRight(), parsed_dnf);
@@ -223,7 +221,7 @@ private:
         if (right_token_type == TokenType::SYMBOL) {
             parsed_dnf.emplace_back(node->string(), true);
         } else if (right_token_type == TokenType::AND_OPERATOR) {
-            isDNF(node, parsed_dnf);
+            checkIsDNF(node, parsed_dnf);
         } else if (right_token_type == TokenType::NOT_OPERATOR) {
             auto not_operation = std::dynamic_pointer_cast<NotOperation>(node);
             if (not_operation->GetChild()->getTokenType() != TokenType::SYMBOL) {

@@ -38,7 +38,7 @@ bool operator<(const Terminal &lhs, const Terminal &rhs) {
 
 class Constant : public BooleanExpression {
 public:
-    Constant(const std::string &str) {
+    explicit Constant(const std::string &str) {
         if (str == "1") {
             value = true;
         } else {

@@ -106,16 +106,16 @@ private:
         token = lexer->GetNext();
         assert((token.type == TokenType::OR_OPERATOR || token.type == TokenType::AND_OPERATOR) ||
                token.type == TokenType::IMPLICATION || token.type == TokenType::EQUALITY);
-        parseBinaryFormula<OrOperation>();
-        parseBinaryFormula<AndOperation>();
-        parseBinaryFormula<ImplicationOperation>();
-        parseBinaryFormula<EqualityOperation>();
+        handleBinaryFormula<OrOperation>();
+        handleBinaryFormula<AndOperation>();
+        handleBinaryFormula<ImplicationOperation>();
+        handleBinaryFormula<EqualityOperation>();
     }
 
     template<typename Operation>
-    void parseBinaryFormula() {
+    void handleBinaryFormula() {
         Operation op;
-        while (token.type == op.getTokenType()) {
+        if (token.type == op.getTokenType()) {
             auto operation = std::make_shared<Operation>();
             operation->SetLeft(root);
             factor();
@@ -132,13 +132,14 @@ private:
         auto not_op = std::make_shared<NotOperation>(NotOperation());
         not_op->SetChild(root);
         root = not_op;
+        token = lexer->GetNext();
+        match(token, TokenType::CLOSE_BRACKET);
     }
 
     void handleFormula() {
         TokenType next = lexer->LookupNext().type;
         if (next == TokenType::NOT_OPERATOR) {
             unaryFormula();
-            token = lexer->GetNext();
         } else {
             binaryFormula();
         }
